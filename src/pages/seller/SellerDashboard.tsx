@@ -45,18 +45,41 @@ export const SellerDashboard = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Seller: Cargando datos...');
+      
       const [variantsData, productsData, categoriesData] = await Promise.all([
         getAllVariants(),
         getAllProducts(),
         getAllCategories()
       ]);
-      setVariants(variantsData);
-      setProducts(productsData);
-      setCategories(categoriesData);
-      setFilteredVariants(variantsData);
+      
+      console.log('🎨 Variantes cargadas:', variantsData);
+      console.log('📦 Productos cargados:', productsData);
+      console.log('📊 Categorías cargadas:', categoriesData);
+      
+      // Validar que los datos sean arrays
+      const variants = Array.isArray(variantsData) ? variantsData : [];
+      const products = Array.isArray(productsData) ? productsData : [];
+      const categories = Array.isArray(categoriesData) ? categoriesData : [];
+      
+      setVariants(variants);
+      setProducts(products);
+      setCategories(categories);
+      setFilteredVariants(variants);
+      
+      console.log('✅ Seller: Datos cargados correctamente', {
+        variantes: variants.length,
+        productos: products.length,
+        categorias: categories.length
+      });
     } catch (error) {
-      console.error('Error al cargar datos:', error);
-      showToast.error('Error al cargar datos');
+      console.error('❌ Seller: Error al cargar datos:', error);
+      showToast.error('Error al cargar datos del catálogo');
+      // Establecer arrays vacíos en caso de error para evitar undefined
+      setVariants([]);
+      setProducts([]);
+      setCategories([]);
+      setFilteredVariants([]);
     } finally {
       setLoading(false);
     }
@@ -157,17 +180,47 @@ export const SellerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando productos...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg font-medium">Cargando catálogo de productos...</p>
+          <p className="text-gray-400 text-sm mt-2">Por favor espera</p>
         </div>
       </div>
     );
   }
 
+  // Debug: Mostrar información si no hay datos
+  console.log('🔍 Seller Dashboard Estado:', {
+    variants: variants.length,
+    products: products.length,
+    categories: categories.length,
+    filteredVariants: filteredVariants.length,
+    cart: cart.length
+  });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 bg-gray-50 min-h-screen">{console.log('🎨 Renderizando Seller Dashboard')}
+      {/* Mensaje de advertencia si no hay datos */}
+      {variants.length === 0 && products.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg"
+        >
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <Package className="h-5 w-5 text-yellow-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                <strong>No hay productos registrados.</strong> Por favor, contacta al administrador para agregar productos y variantes al catálogo.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

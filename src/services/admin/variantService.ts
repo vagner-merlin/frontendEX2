@@ -65,14 +65,24 @@ export const getAllVariants = async (): Promise<ProductVariant[]> => {
     });
 
     if (!response.ok) {
-      throw new Error('Error al obtener variantes');
+      const errorText = await response.text();
+      console.error('❌ Error response:', errorText);
+      throw new Error(`Error al obtener variantes: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('🎨 Variantes obtenidas:', data);
+    console.log('🎨 Variantes raw response:', data);
     
-    // La API puede retornar { count: X, results: [...] } o directamente el array
-    return data.results || data;
+    // La API puede retornar { success: true, variantes: [...] }, { count: X, results: [...] } o directamente el array
+    const variants = data.variantes || data.results || data;
+    
+    if (!Array.isArray(variants)) {
+      console.error('❌ Las variantes no son un array:', variants);
+      return [];
+    }
+    
+    console.log(`✅ ${variants.length} variantes procesadas`);
+    return variants;
   } catch (error) {
     console.error('❌ Error al obtener variantes:', error);
     throw error;

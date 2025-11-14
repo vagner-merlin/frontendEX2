@@ -48,14 +48,24 @@ export const getAllCategories = async (): Promise<Category[]> => {
     });
 
     if (!response.ok) {
-      throw new Error('Error al obtener categorías');
+      const errorText = await response.text();
+      console.error('❌ Error response:', errorText);
+      throw new Error(`Error al obtener categorías: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('📦 Categorías obtenidas:', data);
+    console.log('📊 Categorías raw response:', data);
     
     // La API retorna { success: true, count: X, categorias: [...] }
-    return data.categorias || data.results || [];
+    const categories = data.categorias || data.results || data;
+    
+    if (!Array.isArray(categories)) {
+      console.error('❌ Las categorías no son un array:', categories);
+      return [];
+    }
+    
+    console.log(`✅ ${categories.length} categorías procesadas`);
+    return categories;
   } catch (error) {
     console.error('❌ Error al obtener categorías:', error);
     throw error;

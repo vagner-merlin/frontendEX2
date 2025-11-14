@@ -1,117 +1,140 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Search, Mail, Phone, Calendar, UserCheck, UserX, Trash2, Shield } from 'lucide-react';
-import { getAllClients, toggleClientActive, deleteClient, type Client } from '../../services/admin/clientService';
+import { Search, Users, UserCheck, UserX, Trash2 } from 'lucide-react';
 import { showToast } from '../../utils/toast';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
+interface Client {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_active: boolean;
+}
 
 export const ClientsPage = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
 
   useEffect(() => {
     loadClients();
-  }, []);
+  }, [filterStatus]);
 
   const loadClients = async () => {
     try {
       setLoading(true);
-      const data = await getAllClients();
-      setClients(data);
+      let url = `${API_URL}/api/clientes/clientes/`;
+      
+      if (filterStatus === 'active') {
+        url = `${API_URL}/api/clientes/clientes/activos/`;
+      } else if (filterStatus === 'inactive') {
+        url = `${API_URL}/api/clientes/clientes/inactivos/`;
+      }
+
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        console.warn('Error al cargar clientes:', response.status);
+        setClients([]);
+        return;
+      }
+      
+      const data = await response.json();
+      const clientsData = data.clientes || data || [];
+      setClients(clientsData);
     } catch (error) {
-      console.error('Error al cargar clientes:', error);
-      showToast.error('Error al cargar clientes');
+      console.error('Error:', error);
+      setClients([]);
+      showToast.error('Error al conectar con el servidor');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleActive = async (clientId: number) => {
+  const handleToggleStatus = async (client: Client) => {
+    const action = client.is_active ? 'desactivar_cuenta' : 'activar_cuenta';
+    const confirmMsg = client.is_active 
+      ? '¿Desactivar esta cuenta de cliente?' 
+      : '¿Activar esta cuenta de cliente?';
+    
+    if (!confirm(confirmMsg)) return;
+
     try {
-      setProcessingId(clientId);
-      const updatedClient = await toggleClientActive(clientId);
-      setClients(clients.map(c => c.id === clientId ? updatedClient : c));
-      showToast.success(
-        `Cliente ${updatedClient.usuario_activo ? 'activado' : 'desactivado'} exitosamente`
-      );
+      const response = await fetch(`${API_URL}/api/clientes/clientes/${client.id}/${action}/`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) throw new Error('Error al cambiar estado');
+      
+      showToast.success(client.is_active ? 'Cliente desactivado' : 'Cliente activado');
+      loadClients();
     } catch (error) {
-      console.error('Error al cambiar estado:', error);
+      console.error('Error:', error);
       showToast.error('Error al cambiar estado del cliente');
-    } finally {
-      setProcessingId(null);
     }
   };
 
-  const handleDelete = async (clientId: number, clientName: string) => {
-    if (!window.confirm(
-      `¿Estás seguro de eliminar al cliente "${clientName}"?\n\n` +
-      `⚠️ ADVERTENCIA: Esto también eliminará su cuenta de usuario asociada. Esta acción no se puede deshacer.`
-    )) {
-      return;
-    }
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar este cliente? Esta acción no se puede deshacer.')) return;
 
     try {
-      setProcessingId(clientId);
-      await deleteClient(clientId);
-      setClients(clients.filter(c => c.id !== clientId));
-      showToast.success('Cliente y usuario eliminados exitosamente');
+      const response = await fetch(`${API_URL}/api/clientes/clientes/${id}/`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Error al eliminar cliente');
+      
+      showToast.success('Cliente eliminado');
+      loadClients();
     } catch (error) {
-      console.error('Error al eliminar cliente:', error);
+      console.error('Error:', error);
       showToast.error('Error al eliminar cliente');
-    } finally {
-      setProcessingId(null);
     }
   };
 
-  const filteredClients = clients.filter(client =>
-    client.usuario_nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.usuario_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.telefono.includes(searchTerm) ||
-    client.usuario_info.username.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredClients = clients.filter(c =>
+    c.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalClientes = clients.length;
-  const clientesActivos = clients.filter(c => c.usuario_activo).length;
-  const clientesNuevos = clients.filter(c => {
-    const registro = new Date(c.fecha_creacion);
-    const hace30Dias = new Date();
-    hace30Dias.setDate(hace30Dias.getDate() - 30);
-    return registro >= hace30Dias;
-  }).length;
+  const activeCount = clients.filter(c => c.is_active).length;
+  const inactiveCount = clients.filter(c => !c.is_active).length;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando clientes...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold text-gray-900">Gestión de Clientes</h2>
-        <p className="text-gray-600 mt-2">Todos los clientes registrados en tu boutique</p>
+        <h2 className="text-3xl font-bold text-gray-900">Clientes</h2>
+        <p className="text-gray-600 mt-1">Gestiona los clientes registrados (solo lectura)</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white"
+          className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl shadow-lg p-6 text-white"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-sm font-medium">Total Clientes</p>
-              <p className="text-4xl font-bold mt-2">{totalClientes}</p>
+              <p className="text-rose-100 text-sm font-medium">Total Clientes</p>
+              <p className="text-3xl font-bold mt-2">{clients.length}</p>
             </div>
-            <Users className="h-12 w-12 text-blue-200" />
+            <div className="bg-white/20 p-3 rounded-lg">
+              <Users className="h-8 w-8" />
+            </div>
           </div>
         </motion.div>
 
@@ -119,192 +142,168 @@ export const ClientsPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white"
+          className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-100 text-sm font-medium">Clientes Activos</p>
-              <p className="text-4xl font-bold mt-2">{clientesActivos}</p>
-              <p className="text-green-100 text-xs mt-1">Con cuentas activadas</p>
+              <p className="text-green-100 text-sm font-medium">Activos</p>
+              <p className="text-3xl font-bold mt-2">{activeCount}</p>
             </div>
-            <UserCheck className="h-12 w-12 text-green-200" />
+            <div className="bg-white/20 p-3 rounded-lg">
+              <UserCheck className="h-8 w-8" />
+            </div>
           </div>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white"
+          transition={{ delay: 0.15 }}
+          className="bg-gradient-to-br from-gray-500 to-gray-600 rounded-xl shadow-lg p-6 text-white"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-purple-100 text-sm font-medium">Nuevos (30 días)</p>
-              <p className="text-4xl font-bold mt-2">{clientesNuevos}</p>
+              <p className="text-gray-100 text-sm font-medium">Inactivos</p>
+              <p className="text-3xl font-bold mt-2">{inactiveCount}</p>
             </div>
-            <Calendar className="h-12 w-12 text-purple-200" />
+            <div className="bg-white/20 p-3 rounded-lg">
+              <UserX className="h-8 w-8" />
+            </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+      <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100 space-y-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, email, teléfono o usuario..."
+            placeholder="Buscar clientes..."
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
           />
         </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilterStatus('all')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filterStatus === 'all'
+                ? 'bg-rose-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => setFilterStatus('active')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filterStatus === 'active'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Activos
+          </button>
+          <button
+            onClick={() => setFilterStatus('inactive')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              filterStatus === 'inactive'
+                ? 'bg-gray-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Inactivos
+          </button>
+        </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Cliente
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contacto
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Usuario
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Estado
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha Registro
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredClients.map((client) => {
-                const isProcessing = processingId === client.id;
-                const nombres = client.usuario_nombre_completo.split(' ');
-                const iniciales = nombres.length >= 2 
-                  ? `${nombres[0].charAt(0)}${nombres[1].charAt(0)}`
-                  : client.usuario_nombre_completo.substring(0, 2).toUpperCase();
-                
-                return (
-                  <motion.tr
-                    key={client.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center text-white font-bold">
-                          {iniciales}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900">
-                            {client.usuario_nombre_completo}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            ID: {client.id}
-                          </div>
-                        </div>
+            <tbody className="divide-y divide-gray-200">
+              {filteredClients.map((client) => (
+                <tr key={client.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-gradient-to-br from-rose-100 to-rose-200 p-2 rounded-full">
+                        <Users className="h-5 w-5 text-rose-600" />
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail className="h-4 w-4 text-gray-400" />
-                          {client.usuario_email}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="h-4 w-4 text-gray-400" />
-                          {client.telefono}
-                        </div>
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {client.first_name} {client.last_name}
+                        </p>
+                        <p className="text-xs text-gray-500">ID: {client.id}</p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-900 font-mono">
-                          {client.usuario_info.username}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {client.usuario_activo ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          <UserCheck className="h-3 w-3" />
-                          Activo
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          <UserX className="h-3 w-3" />
-                          Inactivo
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        {new Date(client.fecha_creacion).toLocaleDateString('es-ES')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleToggleActive(client.id)}
-                          disabled={isProcessing}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                            client.usuario_activo
-                              ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                              : 'bg-green-100 text-green-700 hover:bg-green-200'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
-                          title={client.usuario_activo ? 'Desactivar cuenta' : 'Activar cuenta'}
-                        >
-                          {isProcessing ? (
-                            <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
-                          ) : client.usuario_activo ? (
-                            <>
-                              <UserX className="h-4 w-4" />
-                              Desactivar
-                            </>
-                          ) : (
-                            <>
-                              <UserCheck className="h-4 w-4" />
-                              Activar
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          onClick={() => handleDelete(client.id, client.usuario_nombre_completo)}
-                          disabled={isProcessing}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Eliminar cliente y usuario"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Eliminar
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                );
-              })}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="text-sm text-gray-600">{client.email}</p>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <p className="text-sm text-gray-600">@{client.username}</p>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      client.is_active 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {client.is_active ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleToggleStatus(client)}
+                        className={`px-3 py-2 rounded-lg transition-colors ${
+                          client.is_active
+                            ? 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                            : 'bg-green-50 text-green-600 hover:bg-green-100'
+                        }`}
+                        title={client.is_active ? 'Desactivar' : 'Activar'}
+                      >
+                        {client.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(client.id)}
+                        className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
 
-        {filteredClients.length === 0 && !loading && (
-          <div className="text-center py-12 text-gray-500">
-            <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>No se encontraron clientes</p>
+        {filteredClients.length === 0 && (
+          <div className="text-center py-12">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">No hay clientes {searchTerm && 'que coincidan con la búsqueda'}</p>
           </div>
         )}
       </div>

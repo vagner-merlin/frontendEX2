@@ -42,14 +42,24 @@ export const getAllProducts = async (): Promise<AdminProduct[]> => {
     });
 
     if (!response.ok) {
-      throw new Error('Error al obtener productos');
+      const errorText = await response.text();
+      console.error('❌ Error response:', errorText);
+      throw new Error(`Error al obtener productos: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('📦 Productos obtenidos:', data);
+    console.log('📦 Productos raw response:', data);
     
     // La API retorna { success: true, count: X, productos: [...] }
-    return data.productos || data.results || [];
+    const products = data.productos || data.results || data;
+    
+    if (!Array.isArray(products)) {
+      console.error('❌ Los productos no son un array:', products);
+      return [];
+    }
+    
+    console.log(`✅ ${products.length} productos procesados`);
+    return products;
   } catch (error) {
     console.error('❌ Error al obtener productos:', error);
     throw error;

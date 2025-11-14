@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Sparkles,
   Palette,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Boxes
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -33,15 +34,15 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/admin/ai-analytics', icon: Sparkles, label: 'IA Analytics' },
+  { path: '/admin/categories', icon: Tag, label: 'Categorías' },
   { path: '/admin/products', icon: Package, label: 'Productos' },
+  { path: '/admin/inventory', icon: Boxes, label: 'Inventario' },
   { path: '/admin/variants', icon: Palette, label: 'Variantes' },
   { path: '/admin/images', icon: ImageIcon, label: 'Imágenes' },
-  { path: '/admin/categories', icon: Tag, label: 'Categorías' },
+  { path: '/admin/employees', icon: Users, label: 'Trabajadores' },
+  { path: '/admin/clients', icon: Users, label: 'Clientes' },
   { path: '/admin/orders', icon: ShoppingBag, label: 'Pedidos' },
   { path: '/admin/providers', icon: Truck, label: 'Proveedores' },
-  // { path: '/admin/inventory', icon: Package2, label: 'Inventario' }, // Oculto temporalmente
-  { path: '/admin/employees', icon: Users, label: 'Empleados' },
-  { path: '/admin/clients', icon: Users, label: 'Clientes' },
   { path: '/admin/profile', icon: UserCircle, label: 'Perfil' },
 ];
 

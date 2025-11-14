@@ -26,10 +26,13 @@ const AddressesList = () => {
     nombre_completo: '',
     telefono: '',
     direccion: '',
+    calle: '',
     ciudad: '',
     departamento: '',
+    estado: '',
     codigo_postal: '',
     referencias: '',
+    Pais: 'Bolivia',
     es_principal: false,
     etiqueta: 'Casa',
   });
@@ -54,10 +57,13 @@ const AddressesList = () => {
       nombre_completo: '',
       telefono: '',
       direccion: '',
+      calle: '',
       ciudad: '',
       departamento: '',
+      estado: '',
       codigo_postal: '',
       referencias: '',
+      Pais: 'Bolivia',
       es_principal: false,
       etiqueta: 'Casa',
     });
@@ -70,13 +76,16 @@ const AddressesList = () => {
     if (!address) return;
 
     setFormData({
-      nombre_completo: address.nombre_completo,
-      telefono: address.telefono,
-      direccion: address.direccion,
-      ciudad: address.ciudad,
-      departamento: address.departamento,
-      codigo_postal: address.codigo_postal,
-      referencias: address.referencias,
+      nombre_completo: address.nombre_completo || '',
+      telefono: address.telefono || '',
+      direccion: address.direccion || '',
+      calle: address.direccion || '',
+      ciudad: address.ciudad || '',
+      departamento: address.departamento || address.estado || '',
+      estado: address.estado || address.departamento || '',
+      codigo_postal: address.codigo_postal || '',
+      referencias: address.referencias || '',
+      Pais: address.Pais || 'Bolivia',
       es_principal: address.es_principal,
       etiqueta: address.etiqueta || 'Casa',
     });
@@ -112,16 +121,23 @@ const AddressesList = () => {
     e.preventDefault();
 
     try {
+      // Sincronizar direccion con calle antes de enviar
+      const dataToSubmit = {
+        ...formData,
+        calle: formData.direccion || formData.calle,
+        estado: formData.departamento || formData.estado,
+      };
+
       if (editingId) {
-        await addressService.updateAddress(editingId, formData);
+        await addressService.updateAddress(editingId, dataToSubmit);
       } else {
-        await addressService.createAddress(formData);
+        await addressService.createAddress(dataToSubmit);
       }
       await loadAddresses();
       resetForm();
     } catch (error) {
       console.error('Error al guardar dirección:', error);
-      alert('Error al guardar dirección');
+      alert(error instanceof Error ? error.message : 'Error al guardar dirección');
     }
   };
 
@@ -132,7 +148,14 @@ const AddressesList = () => {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      // Sincronizar campos relacionados
+      if (name === 'direccion') {
+        setFormData(prev => ({ ...prev, direccion: value, calle: value }));
+      } else if (name === 'departamento') {
+        setFormData(prev => ({ ...prev, departamento: value, estado: value }));
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+      }
     }
   };
 

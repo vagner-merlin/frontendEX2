@@ -35,7 +35,7 @@ const ShopPage = () => {
       setIsLoading(true);
       try {
         console.log('🔄 ShopPage: Iniciando carga de productos con filtros:', filters);
-        console.log('🌐 API URL configurada:', import.meta.env.VITE_API_URL || 'http://localhost:8000');
+        console.log('🌐 API URL configurada:', import.meta.env.VITE_API_URL || 'http://3.86.0.53:8000');
         
         const response = await productService.getProducts(filters);
         console.log('✅ ShopPage: Productos cargados exitosamente:', response);

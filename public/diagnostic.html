@@ -76,7 +76,7 @@
             log('🔍 Probando conexión al Backend Django...');
             
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/users/users/', {
+                const response = await fetch('http://3.86.0.53:8000/api/users/users/', {
                     method: 'GET',
                 });
                 
@@ -88,7 +88,7 @@
                 }
             } catch (error) {
                 log(`❌ Error al conectar con Backend: ${error.message}`, true);
-                log('💡 Verifica que Django esté corriendo en http://127.0.0.1:8000/', true);
+                log('💡 Verifica que Django esté corriendo en http://3.86.0.53:8000/', true);
             }
         }
 
@@ -126,7 +126,7 @@
             log('🔍 Probando CORS...');
             
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/users/users/', {
+                const response = await fetch('http://3.86.0.53:8000/api/users/users/', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -152,7 +152,7 @@
             log('🔍 Probando API de Usuarios...');
             
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/users/users/');
+                const response = await fetch('http://3.86.0.53:8000/api/users/users/');
                 const data = await response.json();
                 
                 log('✅ API respondió correctamente');

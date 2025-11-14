@@ -103,7 +103,7 @@ interface ProductsResponse {
   totalPages: number;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://3.86.0.53:8000';
 
 // Imagen placeholder SVG como data URL
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400"%3E%3Crect width="400" height="400" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" font-size="24" fill="%23999" text-anchor="middle" dy=".3em" font-family="Arial"%3EImagen no disponible%3C/text%3E%3C/svg%3E';

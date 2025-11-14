@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit, Trash2, Search, Image as ImageIcon, X, MessageSquare, Upload } from 'lucide-react';
 import { showToast } from '../../utils/toast';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://3.86.0.53:8000';
 
 interface ProductImage {
   id: number;

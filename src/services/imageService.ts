@@ -3,7 +3,7 @@
  * Usa directamente el endpoint /api/productos/imagenes/
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://3.86.0.53:8000';
 
 export interface ImageInfo {
   id: number;

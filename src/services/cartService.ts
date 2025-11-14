@@ -1,6 +1,6 @@
 // Servicio para carrito - Conectado al backend Django
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://3.86.0.53:8000';
 
 // Interfaces para el carrito
 export interface CartVariantInfo {

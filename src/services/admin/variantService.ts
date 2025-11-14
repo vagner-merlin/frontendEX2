@@ -3,7 +3,7 @@
  * Conectado con Backend Django
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://3.86.0.53:8000';
 
 export interface ProductVariant {
   id: number;

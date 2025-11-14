@@ -1,7 +1,7 @@
 import type { User, RegisterData } from '../context/AuthContext';
 import type { UserRole } from '../context/AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://3.86.0.53:8000';
 
 interface LoginResponse {
   access_token: string;

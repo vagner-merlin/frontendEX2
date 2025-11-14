@@ -7,28 +7,26 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 interface Inventory {
   id: number;
-  Producto_id: number;
-  producto_nombre?: string;
   stock: number;
   stock_minimo: number;
   stock_maximo: number;
   ubicacion_almacen: string;
-}
-
-interface Product {
-  id: number;
-  nombre: string;
+  variantes?: Array<{
+    id: number;
+    producto_nombre: string;
+    color: string;
+    talla: string;
+    precio_unitario: string;
+  }>;
 }
 
 export const InventoryPage = () => {
   const [inventory, setInventory] = useState<Inventory[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<Inventory | null>(null);
   const [formData, setFormData] = useState({
-    Producto_id: 0,
     stock: 0,
     stock_minimo: 0,
     stock_maximo: 0,
@@ -42,37 +40,23 @@ export const InventoryPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [inventoryRes, productsRes] = await Promise.all([
-        fetch(`${API_URL}/api/productos/inventario/`),
-        fetch(`${API_URL}/api/productos/productos/`),
-      ]);
+      const inventoryRes = await fetch(`${API_URL}/api/productos/inventario/`);
 
-      if (!inventoryRes.ok || !productsRes.ok) {
+      if (!inventoryRes.ok) {
         showToast.error('Error al cargar datos');
         setInventory([]);
-        setProducts([]);
         return;
       }
       
       const inventoryResponse = await inventoryRes.json();
-      const productsResponse = await productsRes.json();
       
       // Extraer datos del objeto de respuesta
       const inventoryData = inventoryResponse.inventario || inventoryResponse || [];
-      const productsData = productsResponse.productos || productsResponse || [];
       
-      // Enriquecer inventario con nombre de producto
-      const enrichedInventory = inventoryData.map((item: Inventory) => ({
-        ...item,
-        producto_nombre: productsData.find((p: Product) => p.id === item.Producto_id)?.nombre || 'Producto desconocido'
-      }));
-      
-      setInventory(enrichedInventory);
-      setProducts(productsData);
+      setInventory(inventoryData);
     } catch (error) {
       console.error('Error:', error);
       setInventory([]);
-      setProducts([]);
       showToast.error('Error al cargar datos');
     } finally {
       setLoading(false);
@@ -81,10 +65,6 @@ export const InventoryPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.Producto_id || formData.Producto_id === 0) {
-      showToast.error('Debes seleccionar un producto');
-      return;
-    }
     if (formData.stock < 0 || formData.stock_minimo < 0 || formData.stock_maximo < 0) {
       showToast.error('Los stocks no pueden ser negativos');
       return;
@@ -138,14 +118,13 @@ export const InventoryPage = () => {
 
   const openCreateModal = () => {
     setEditingItem(null);
-    setFormData({ Producto_id: 0, stock: 0, stock_minimo: 0, stock_maximo: 0, ubicacion_almacen: '' });
+    setFormData({ stock: 0, stock_minimo: 0, stock_maximo: 0, ubicacion_almacen: '' });
     setShowModal(true);
   };
 
   const openEditModal = (item: Inventory) => {
     setEditingItem(item);
     setFormData({
-      Producto_id: item.Producto_id,
       stock: item.stock,
       stock_minimo: item.stock_minimo,
       stock_maximo: item.stock_maximo,
@@ -165,10 +144,14 @@ export const InventoryPage = () => {
     return 'normal';
   };
 
-  const filteredInventory = inventory.filter(item =>
-    item.producto_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.ubicacion_almacen?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredInventory = inventory.filter(item => {
+    const variantesMatch = item.variantes?.some(v => 
+      v.producto_nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.color?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.talla?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    return variantesMatch || item.ubicacion_almacen?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const lowStockCount = inventory.filter(i => i.stock <= i.stock_minimo).length;
   const highStockCount = inventory.filter(i => i.stock >= i.stock_maximo).length;
@@ -289,7 +272,7 @@ export const InventoryPage = () => {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Producto
+                  Variantes Asociadas
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Stock Actual
@@ -313,15 +296,23 @@ export const InventoryPage = () => {
                 const status = getStockStatus(item);
                 return (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-rose-100 to-rose-200 p-2 rounded-lg">
-                          <Package className="h-5 w-5 text-rose-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{item.producto_nombre}</p>
-                          <p className="text-xs text-gray-500">ID Producto: {item.Producto_id}</p>
-                        </div>
+                    <td className="px-6 py-4">
+                      <div className="space-y-2">
+                        {item.variantes && item.variantes.length > 0 ? (
+                          item.variantes.map((v, idx) => (
+                            <div key={idx} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                              <Package className="h-4 w-4 text-rose-600" />
+                              <div>
+                                <p className="font-semibold text-gray-900 text-sm">{v.producto_nombre}</p>
+                                <p className="text-xs text-gray-500">
+                                  {v.color} | {v.talla} | ${v.precio_unitario}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-sm text-gray-500 italic">Sin variantes asignadas</div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -408,28 +399,13 @@ export const InventoryPage = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Producto *
-                </label>
-                <select
-                  value={formData.Producto_id}
-                  onChange={(e) => setFormData({ ...formData, Producto_id: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                  required
-                  disabled={!!editingItem}
-                >
-                  <option value={0}>Selecciona un producto</option>
-                  {products.map(prod => (
-                    <option key={prod.id} value={prod.id}>
-                      {prod.nombre}
-                    </option>
-                  ))}
-                </select>
-                {editingItem && (
-                  <p className="text-xs text-gray-500 mt-1">No se puede cambiar el producto al editar</p>
-                )}
-              </div>
+              {editingItem && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Nota:</strong> Este inventario será asignado a variantes desde la página de Variantes.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

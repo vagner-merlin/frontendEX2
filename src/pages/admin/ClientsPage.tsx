@@ -7,11 +7,23 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 interface Client {
   id: number;
-  username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  is_active: boolean;
+  telefono: string;
+  fecha_creacion: string;
+  fecha_nacimiento: string;
+  usuario: number;
+  usuario_info: {
+    id: number;
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    is_active: boolean;
+    date_joined: string;
+    last_login: string | null;
+  };
+  usuario_email: string;
+  usuario_nombre_completo: string;
+  usuario_activo: boolean;
 }
 
 export const ClientsPage = () => {
@@ -44,8 +56,20 @@ export const ClientsPage = () => {
       }
       
       const data = await response.json();
+      console.log('📦 Datos recibidos del backend:', data);
       const clientsData = data.clientes || data || [];
-      setClients(clientsData);
+      console.log('👥 Total clientes recibidos:', clientsData.length);
+      
+      // Filtrar solo clientes con correo @gmail.cli
+      const gmailCliClients = clientsData.filter((client: Client) => {
+        const email = client.usuario_email || client.usuario_info?.email || '';
+        const hasGmailCli = email.toLowerCase().endsWith('@gmail.cli');
+        console.log(`  Cliente ${client.id}: ${email} -> ${hasGmailCli ? '✅' : '❌'}`);
+        return hasGmailCli;
+      });
+      
+      console.log('✅ Clientes con @gmail.cli:', gmailCliClients.length);
+      setClients(gmailCliClients);
     } catch (error) {
       console.error('Error:', error);
       setClients([]);
@@ -56,8 +80,8 @@ export const ClientsPage = () => {
   };
 
   const handleToggleStatus = async (client: Client) => {
-    const action = client.is_active ? 'desactivar_cuenta' : 'activar_cuenta';
-    const confirmMsg = client.is_active 
+    const action = client.usuario_activo ? 'desactivar_cuenta' : 'activar_cuenta';
+    const confirmMsg = client.usuario_activo 
       ? '¿Desactivar esta cuenta de cliente?' 
       : '¿Activar esta cuenta de cliente?';
     
@@ -70,7 +94,7 @@ export const ClientsPage = () => {
 
       if (!response.ok) throw new Error('Error al cambiar estado');
       
-      showToast.success(client.is_active ? 'Cliente desactivado' : 'Cliente activado');
+      showToast.success(client.usuario_activo ? 'Cliente desactivado' : 'Cliente activado');
       loadClients();
     } catch (error) {
       console.error('Error:', error);
@@ -97,14 +121,14 @@ export const ClientsPage = () => {
   };
 
   const filteredClients = clients.filter(c =>
-    c.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    c.usuario_info?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.usuario_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.usuario_info?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.usuario_info?.last_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const activeCount = clients.filter(c => c.is_active).length;
-  const inactiveCount = clients.filter(c => !c.is_active).length;
+  const activeCount = clients.filter(c => c.usuario_activo).length;
+  const inactiveCount = clients.filter(c => !c.usuario_activo).length;
 
   if (loading) {
     return (
@@ -118,7 +142,7 @@ export const ClientsPage = () => {
     <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-bold text-gray-900">Clientes</h2>
-        <p className="text-gray-600 mt-1">Gestiona los clientes registrados (solo lectura)</p>
+        <p className="text-gray-600 mt-1">Gestiona clientes con correo @gmail.cli - Puedes desactivar o eliminar cuentas</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -251,25 +275,25 @@ export const ClientsPage = () => {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">
-                          {client.first_name} {client.last_name}
+                          {client.usuario_info?.first_name} {client.usuario_info?.last_name}
                         </p>
-                        <p className="text-xs text-gray-500">ID: {client.id}</p>
+                        <p className="text-xs text-gray-500">ID: {client.id} | Tel: {client.telefono}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm text-gray-600">{client.email}</p>
+                    <p className="text-sm text-gray-600">{client.usuario_email}</p>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <p className="text-sm text-gray-600">@{client.username}</p>
+                    <p className="text-sm text-gray-600">@{client.usuario_info?.username}</p>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      client.is_active 
+                      client.usuario_activo 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-gray-100 text-gray-700'
                     }`}>
-                      {client.is_active ? 'Activo' : 'Inactivo'}
+                      {client.usuario_activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -277,13 +301,13 @@ export const ClientsPage = () => {
                       <button
                         onClick={() => handleToggleStatus(client)}
                         className={`px-3 py-2 rounded-lg transition-colors ${
-                          client.is_active
+                          client.usuario_activo
                             ? 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                             : 'bg-green-50 text-green-600 hover:bg-green-100'
                         }`}
-                        title={client.is_active ? 'Desactivar' : 'Activar'}
+                        title={client.usuario_activo ? 'Desactivar' : 'Activar'}
                       >
-                        {client.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                        {client.usuario_activo ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
                       </button>
                       <button
                         onClick={() => handleDelete(client.id)}
@@ -303,7 +327,11 @@ export const ClientsPage = () => {
         {filteredClients.length === 0 && (
           <div className="text-center py-12">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No hay clientes {searchTerm && 'que coincidan con la búsqueda'}</p>
+            <p className="text-gray-500">
+              {searchTerm 
+                ? 'No hay clientes con @gmail.cli que coincidan con la búsqueda' 
+                : 'No hay clientes registrados con correo @gmail.cli'}
+            </p>
           </div>
         )}
       </div>

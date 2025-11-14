@@ -95,27 +95,29 @@ const ProductDetailModal = ({ isOpen, onClose, productData }: ProductDetailModal
                 </div>
 
                 {/* Categories */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="font-raleway font-semibold text-lg mb-4 flex items-center gap-2">
-                    <Tag size={20} className="text-boutique-gold" />
-                    Categorías
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {productData.categorias.map((categoria) => (
-                      <div
-                        key={categoria.id}
-                        className="bg-boutique-rose text-white px-3 py-1 rounded-full text-sm font-poppins"
-                      >
-                        {categoria.nombre}
-                      </div>
-                    ))}
-                  </div>
-                  {productData.categorias.length > 0 && (
-                    <div className="mt-3 text-sm text-gray-600 font-poppins">
-                      {productData.categorias[0].descripcion}
+                {productData.categorias && productData.categorias.length > 0 && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-raleway font-semibold text-lg mb-4 flex items-center gap-2">
+                      <Tag size={20} className="text-boutique-gold" />
+                      Categorías
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {productData.categorias.map((categoria) => (
+                        <div
+                          key={categoria.id}
+                          className="bg-boutique-rose text-white px-3 py-1 rounded-full text-sm font-poppins"
+                        >
+                          {categoria.nombre}
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </div>
+                    {productData.categorias.length > 0 && productData.categorias[0].descripcion && (
+                      <div className="mt-3 text-sm text-gray-600 font-poppins">
+                        {productData.categorias[0].descripcion}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Variants */}
@@ -195,31 +197,31 @@ const ProductDetailModal = ({ isOpen, onClose, productData }: ProductDetailModal
 
               {/* Summary Stats */}
               <div className="bg-gradient-to-r from-boutique-beige to-boutique-rose-light rounded-lg p-6">
-                <h3 className="font-raleway font-semibold text-lg mb-4">Resumen del Producto</h3>
+                <h3 className="font-raleway font-semibold text-lg mb-4 text-gray-900">Resumen del Producto</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div>
                     <div className="text-2xl font-bold text-boutique-rose">
                       {productData.variantes.length}
                     </div>
-                    <div className="text-sm text-gray-600 font-poppins">Variantes</div>
+                    <div className="text-sm text-gray-800 font-poppins">Variantes</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-boutique-gold">
                       {[...new Set(productData.variantes.map(v => v.color))].length}
                     </div>
-                    <div className="text-sm text-gray-600 font-poppins">Colores</div>
+                    <div className="text-sm text-gray-800 font-poppins">Colores</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-boutique-rose">
                       {[...new Set(productData.variantes.map(v => v.talla))].length}
                     </div>
-                    <div className="text-sm text-gray-600 font-poppins">Tallas</div>
+                    <div className="text-sm text-gray-800 font-poppins">Tallas</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-green-600">
                       {productData.variantes.reduce((sum, v) => sum + v.stock, 0)}
                     </div>
-                    <div className="text-sm text-gray-600 font-poppins">Stock Total</div>
+                    <div className="text-sm text-gray-800 font-poppins">Stock Total</div>
                   </div>
                 </div>
               </div>

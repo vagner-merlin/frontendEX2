@@ -19,6 +19,8 @@ const ProductDetailPage = () => {
     const loadProduct = async () => {
       if (!id) {
         console.error('❌ ProductDetailPage: No hay ID en params');
+        setProduct(null);
+        setIsLoading(false);
         return;
       }
       
@@ -32,8 +34,17 @@ const ProductDetailPage = () => {
         if (!variant) {
           console.error('⚠️ ProductDetailPage: La variante no existe');
           setProduct(null);
+          setIsLoading(false);
           return;
         }
+        
+        console.log('🔍 Verificando campos críticos:', {
+          tiene_producto_info: !!variant.producto_info,
+          tiene_categoria_info: !!variant.categoria_info,
+          tiene_imagenes: !!variant.imagenes,
+          tiene_imagen_principal: !!variant.imagen_principal,
+          stock: variant.stock,
+        });
         
         // Convertir datos de variante a formato Product para los componentes existentes
         const images: string[] = [];
@@ -62,15 +73,15 @@ const ProductDetailPage = () => {
         
         const productData: Product = {
           id: variant.id,
-          name: variant.producto_info.nombre,
-          description: variant.producto_info.descripcion,
+          name: variant.producto_info?.nombre || 'Producto sin nombre',
+          description: variant.producto_info?.descripcion || '',
           price: parseFloat(variant.precio_unitario),
           discount: 0,
-          category: variant.categoria_info.nombre,
+          category: variant.categoria_info?.nombre || 'Sin categoría',
           images: images.length > 0 ? images : ['/placeholder-product.jpg'],
           sizes: sizes,
           colors: colors,
-          stock: variant.stock,
+          stock: variant.stock || 0,
           rating: 4.5,
           reviews: 0,
           isNew: false,

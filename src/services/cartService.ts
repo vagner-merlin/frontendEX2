@@ -265,8 +265,17 @@ export const cartService = {
     }
   },
 
-  // Verificar si usuario está autenticado
+  // Verificar si usuario está autenticado y el token es válido
   isAuthenticated: (): boolean => {
-    return !!getAuthToken();
+    const token = getAuthToken();
+    if (!token) return false;
+    
+    // Verificar que el token no esté vacío o sea 'null' como string
+    if (token === 'null' || token === 'undefined' || token.trim() === '') {
+      localStorage.removeItem('token');
+      return false;
+    }
+    
+    return true;
   }
 };

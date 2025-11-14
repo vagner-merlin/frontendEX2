@@ -92,9 +92,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         console.log('📦 CartContext: No hay carrito en el servidor');
         setItems([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ CartContext: Error sincronizando con servidor:', error);
-      showToast.error('Error al cargar carrito del servidor');
+      // Si es error 401, el usuario no está autenticado correctamente
+      if (error?.response?.status === 401 || error?.message?.includes('401')) {
+        console.log('🔓 CartContext: Error de autenticación, usando localStorage');
+        // Cargar desde localStorage como fallback
+        const storedCart = localStorage.getItem('cart');
+        if (storedCart) {
+          try {
+            setItems(JSON.parse(storedCart));
+          } catch (e) {
+            console.error('Error parsing localStorage cart:', e);
+          }
+        }
+      } else {
+        showToast.error('Error al cargar carrito del servidor');
+      }
     } finally {
       setIsLoading(false);
     }
